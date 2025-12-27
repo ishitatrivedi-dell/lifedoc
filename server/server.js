@@ -3,6 +3,10 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
+const measurementRoutes = require("./routes/measurements");
+const diaryRoutes = require("./routes/diary");
+const labReportRoutes = require("./routes/labReports");
+const doctorReportRoutes = require("./routes/doctorReports");
 
 const app = express();
 dotenv.config();
@@ -17,10 +21,14 @@ mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/lifedoc")
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/measurements", measurementRoutes);
+app.use("/api/diary", diaryRoutes);
+app.use("/api/lab-reports", labReportRoutes);
+app.use("/api/doctor-reports", doctorReportRoutes);
 
 const PORT = process.env.SERVER_PORT || 3001;
 
 
 app.listen(PORT, () => {
-    console.log(`The server is running on http://localhost:${PORT}`);
+  console.log(`The server is running on http://localhost:${PORT}`);
 })
