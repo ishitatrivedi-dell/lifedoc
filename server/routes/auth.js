@@ -53,8 +53,8 @@ router.post("/verify-otp", async (req, res) => {
     user.otpExpires = undefined;
     await user.save();
 
-    const token = jwt.sign({ id: user._id, type: user.type }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    
+    const token = jwt.sign({ id: user._id, type: user.type }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
     // Return user data along with token
     const userData = {
       id: user._id,
@@ -81,8 +81,8 @@ router.post("/login", async (req, res) => {
 
     if (!user.isVerified) return res.status(400).json({ message: "Please verify your email" });
 
-    const token = jwt.sign({ id: user._id, type: user.type }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    
+    const token = jwt.sign({ id: user._id, type: user.type }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
     // Return user data along with token
     const userData = {
       id: user._id,
@@ -93,6 +93,7 @@ router.post("/login", async (req, res) => {
 
     res.status(200).json({ message: "Login successful", token, user: userData });
   } catch (error) {
+    console.error("Login Error:", error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -127,6 +128,15 @@ router.post("/reset-password", async (req, res) => {
 
     user.password = newPassword;
     user.otp = undefined;
+    user.otpExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Get user profile - protected route
 router.get("/profile", authMiddleware, async (req, res) => {
   try {
@@ -143,15 +153,6 @@ router.get("/profile", authMiddleware, async (req, res) => {
     };
 
     res.status(200).json({ user: userData });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-    user.otpExpires = undefined;
-    await user.save();
-
-    res.status(200).json({ message: "Password reset successful" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
