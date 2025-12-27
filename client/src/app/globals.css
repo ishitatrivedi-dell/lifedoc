@@ -1,28 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
 @layer base {
   * {
     @apply scroll-smooth;
   }
 
   body {
-    @apply bg-gradient-to-br from-gray-50 via-blue-50 to-purple-50;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #FAFFF5;
+    /* Cream/White from palette */
+    color: #2C2C2C;
+    /* Dark Grey from palette */
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/80 backdrop-blur-lg border border-white/20;
+    @apply bg-white/60 backdrop-blur-xl border border-[#A9C29B]/20 shadow-sm;
   }
 
-  .gradient-text {
-    @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+  .text-gradient {
+    background: linear-gradient(135deg, #7A8E6B 0%, #A9C29B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .bg-gradient-primary {
+    background: linear-gradient(135deg, #7A8E6B 0%, #A9C29B 100%);
   }
 
   .btn-primary {
-    @apply px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition transform hover:scale-105;
+    @apply px-6 py-4 text-white rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center;
+    background: linear-gradient(135deg, #7A8E6B 0%, #99B888 100%);
+    box-shadow: 0 10px 25px -5px rgba(122, 142, 107, 0.4);
   }
 
   .card-hover {
-    @apply hover:shadow-xl hover:border-blue-300 transition transform hover:-translate-y-1;
+    @apply hover:shadow-lg hover:border-[#7A8E6B]/30 transition-all duration-300 hover:-translate-y-1;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#7A8E6B] focus:ring-2 focus:ring-[#7A8E6B]/20 outline-none transition-all;
   }
 }
