@@ -42,3 +42,6 @@ coverage/
 REDUX_IMPLEMENTATION.md
 TEST_CHECKLIST.md
 REDUX_SUMMARY.md
+
+.zencoder
+.zenflow

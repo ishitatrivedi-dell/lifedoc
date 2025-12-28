@@ -23,7 +23,7 @@ export default function LabReportsPage() {
         <ProtectedRoute>
             <div className="flex min-h-screen bg-gray-50">
                 <Sidebar />
-                <main className="flex-1 ml-64 p-8">
+                <main className="flex-1 ml-72 p-8">
                     <header className="flex justify-between items-center mb-8">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Lab Reports</h1>

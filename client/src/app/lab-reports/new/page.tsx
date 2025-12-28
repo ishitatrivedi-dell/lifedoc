@@ -61,7 +61,7 @@ export default function NewLabReportPage() {
         <ProtectedRoute>
             <div className="flex min-h-screen bg-gray-50">
                 <Sidebar />
-                <main className="flex-1 ml-64 p-8">
+                <main className="flex-1 ml-72 p-8">
                     <header className="flex items-center mb-8">
                         <button
                             onClick={() => router.back()}

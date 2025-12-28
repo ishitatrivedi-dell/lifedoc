@@ -42,13 +42,13 @@ const Sidebar = () => {
                         <Link
                             key={item.path}
                             href={item.path}
-                            className={`flex items-center space-x-3 px-5 py-3.5 rounded-full transition-all duration-300 group font-semibold ${isActive
+                            className={`flex items-center space-x-3 px-5 py-3.5 rounded-sm transition-all duration-300 group ${isActive
                                 ? 'bg-gradient-primary text-white shadow-md shadow-[#7A8E6B]/20'
                                 : 'text-gray-500 hover:bg-[#7A8E6B]/10 hover:text-[#7A8E6B]'
                                 }`}
                         >
                             <item.icon className={`text-xl ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-[#7A8E6B]'}`} />
-                            <span className>{item.name}</span>
+                            <span>{item.name}</span>
                         </Link>
                     );
                 })}

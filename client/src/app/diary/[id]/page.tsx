@@ -1,24 +1,40 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Sidebar from '@/components/Sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
-import { createDiaryEntry } from '@/store/slices/diarySlice';
-import { useRouter } from 'next/navigation';
-import { FaArrowLeft, FaMagic, FaSmile, FaMeh, FaFrown, FaBolt, FaCloudRain } from 'react-icons/fa';
+import { getDiaryEntryById, updateDiaryEntry } from '@/store/slices/diarySlice';
+import { useRouter, useParams } from 'next/navigation';
+import { FaArrowLeft, FaMagic, FaSmile, FaMeh, FaFrown, FaBolt, FaCloudRain, FaSave } from 'react-icons/fa';
 
-export default function NewDiaryEntryPage() {
+export default function EditDiaryEntryPage() {
     const dispatch = useDispatch<AppDispatch>();
     const router = useRouter();
+    const params = useParams();
     const { user } = useSelector((state: RootState) => state.auth);
-    const { loading } = useSelector((state: RootState) => state.diary);
+    const { currentEntry, loading } = useSelector((state: RootState) => state.diary);
 
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState('');
     const [text, setText] = useState('');
     const [mood, setMood] = useState('neutral');
     const [summary, setSummary] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
+
+    useEffect(() => {
+        if (params.id) {
+            dispatch(getDiaryEntryById(params.id as string));
+        }
+    }, [dispatch, params.id]);
+
+    useEffect(() => {
+        if (currentEntry) {
+            setDate(new Date(currentEntry.date).toISOString().split('T')[0]);
+            setText(currentEntry.rawText || '');
+            setMood(currentEntry.mood || 'neutral');
+            setSummary(currentEntry.summary);
+        }
+    }, [currentEntry]);
 
     // Simple "AI" simulation for summary generation
     const generateSummary = () => {
@@ -35,21 +51,23 @@ export default function NewDiaryEntryPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.id) return;
+        if (!user?.id || !params.id) return;
 
         // Use simulated summary if not provided
         const finalSummary = summary || text.slice(0, 100) + (text.length > 100 ? '...' : '');
 
-        const result = await dispatch(createDiaryEntry({
-            userId: user.id,
-            date: date,
-            rawText: text,
-            summary: finalSummary,
-            mood: mood,
-            tags: ['daily', mood] // Simple default tags
+        const result = await dispatch(updateDiaryEntry({
+            id: params.id as string,
+            data: {
+                date: date,
+                rawText: text,
+                summary: finalSummary,
+                mood: mood as any,
+                tags: ['daily', mood] // Simple default tags
+            }
         }));
 
-        if (createDiaryEntry.fulfilled.match(result)) {
+        if (updateDiaryEntry.fulfilled.match(result)) {
             router.push('/diary');
         }
     };
@@ -61,6 +79,19 @@ export default function NewDiaryEntryPage() {
         { id: 'sad', icon: FaCloudRain, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
         { id: 'stressed', icon: FaFrown, color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200' },
     ];
+
+    if (loading && !currentEntry) {
+        return (
+            <ProtectedRoute>
+                <div className="flex min-h-screen bg-gray-50">
+                    <Sidebar />
+                    <main className="flex-1 ml-72 p-8 flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </main>
+                </div>
+            </ProtectedRoute>
+        );
+    }
 
     return (
         <ProtectedRoute>
@@ -74,7 +105,7 @@ export default function NewDiaryEntryPage() {
                         >
                             <FaArrowLeft />
                         </button>
-                        <h1 className="text-2xl font-bold text-gray-800">New Diary Entry</h1>
+                        <h1 className="text-2xl font-bold text-gray-800">Edit Diary Entry</h1>
                     </header>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -151,16 +182,17 @@ export default function NewDiaryEntryPage() {
                                     disabled={!text || isGenerating}
                                     className="w-full py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-purple-50 transition disabled:opacity-50"
                                 >
-                                    {isGenerating ? 'Generating...' : 'Generate Summary'}
+                                    {isGenerating ? 'Generating...' : 'Regenerate Summary'}
                                 </button>
                             </div>
 
                             <button
                                 onClick={handleSubmit}
                                 disabled={loading || !text}
-                                className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold shadow-lg hover:bg-black transition disabled:opacity-50"
+                                className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold shadow-lg hover:bg-black transition disabled:opacity-50 flex items-center justify-center space-x-2"
                             >
-                                {loading ? 'Saving...' : 'Save Entry'}
+                                <FaSave />
+                                <span>{loading ? 'Saving...' : 'Update Entry'}</span>
                             </button>
                         </div>
                     </div>
