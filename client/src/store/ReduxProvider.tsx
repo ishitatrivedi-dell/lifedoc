@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import { useEffect } from 'react';
 import { useAppDispatch } from './hooks';
-import { fetchUserProfile } from './slices/authSlice';
+import { fetchUserProfile, setInitialized } from './slices/authSlice';
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
@@ -15,6 +15,8 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (token) {
         dispatch(fetchUserProfile());
+      } else {
+        dispatch(setInitialized());
       }
     }
   }, [dispatch]);

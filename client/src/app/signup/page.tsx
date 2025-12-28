@@ -163,21 +163,19 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Right Side - Content (Hidden on mobile) */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-400 to-emerald-600 flex-col items-center justify-center p-8 relative overflow-hidden">
-          {/* Decorative background */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 right-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute bottom-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
-          </div>
+        {/* Right */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-100">
+          <img
+            src="https://res.cloudinary.com/dzsvjyg2c/image/upload/v1766864239/Gemini_Generated_Image_7tp4m87tp4m87tp4_o2zzbs.png"
+            alt="LifeDoc Medical Professionals"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
 
-          {/* Content */}
-          <div className="relative z-10 text-center text-white max-w-md">
-            <h2 className="text-4xl font-bold mb-4">
-              Your Health is Our Priority
-            </h2>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-12">
+            <h2 className="text-4xl font-bold text-white mb-2">Your Health Matters</h2>
             <p className="text-emerald-50 text-lg leading-relaxed">
-              Access your medical documents, review your history and receive personalized health advice.
+              Access your medical records, track your health history, and stay connected
+              with your healthcare providers.
             </p>
           </div>
         </div>

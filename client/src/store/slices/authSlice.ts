@@ -14,6 +14,7 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -23,6 +24,7 @@ const initialState: AuthState = {
   user: null,
   token: null,
   isAuthenticated: false,
+  isInitialized: false,
   loading: false,
   error: null,
 };
@@ -42,13 +44,9 @@ export const loginUser = createAsyncThunk(
 
       const { token, user } = response.data;
 
-      // Store token based on remember me preference (only in browser)
+      // Store token (always in localStorage for 7-day persistence)
       if (typeof window !== 'undefined') {
-        if (rememberMe) {
-          localStorage.setItem('token', token);
-        } else {
-          sessionStorage.setItem('token', token);
-        }
+        localStorage.setItem('token', token);
       }
 
       return { token, user };
@@ -93,14 +91,9 @@ export const verifyOTP = createAsyncThunk(
 
       const { token, user } = response.data;
 
-      // Store token (only in browser)
+      // Store token (always in localStorage for 7-day persistence)
       if (typeof window !== 'undefined') {
-        const rememberMe = JSON.parse(sessionStorage.getItem('rememberMe') || 'false');
-        if (rememberMe) {
-          localStorage.setItem('token', token);
-        } else {
-          sessionStorage.setItem('token', token);
-        }
+        localStorage.setItem('token', token);
 
         // Clear session data
         sessionStorage.removeItem('pendingEmail');
@@ -162,6 +155,9 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+    },
+    setInitialized: (state) => {
+      state.isInitialized = true;
     },
   },
   extraReducers: (builder) => {
@@ -226,12 +222,14 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isAuthenticated = true;
+        state.isInitialized = true;
       })
       .addCase(fetchUserProfile.rejected, (state) => {
         state.loading = false;
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+        state.isInitialized = true;
       });
 
     // Logout
@@ -249,5 +247,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError, setCredentials } = authSlice.actions;
+export const { clearError, setCredentials, setInitialized } = authSlice.actions;
 export default authSlice.reducer;

@@ -10,15 +10,15 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
-  const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, loading, isInitialized } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (isInitialized && !loading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, loading, isInitialized, router]);
 
-  if (loading) {
+  if (!isInitialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <div className="text-center">

@@ -10,21 +10,20 @@ export default function Login() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    rememberMe: false
+    rememberMe: false,
   });
+
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { loading, error, isAuthenticated } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    // Redirect if already authenticated
     if (isAuthenticated) {
       router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    // Clear error when component unmounts
     return () => {
       dispatch(clearError());
     };
@@ -32,20 +31,22 @@ export default function Login() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const result = await dispatch(loginUser({
-      email: formData.email,
-      password: formData.password,
-      rememberMe: formData.rememberMe
-    }));
+    const result = await dispatch(
+      loginUser({
+        email: formData.email,
+        password: formData.password,
+        rememberMe: formData.rememberMe,
+      })
+    );
 
     if (loginUser.fulfilled.match(result)) {
       router.push('/dashboard');
@@ -67,12 +68,13 @@ export default function Login() {
 
       {/* Main Content */}
       <div className="flex h-screen">
-        {/* Left Side - Form */}
+        {/* Left */}
         <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 sm:px-8 lg:px-16">
           <div className="w-full max-w-md">
             <h1 className="text-4xl font-bold text-gray-900 mb-3 text-center">
               Welcome Back
             </h1>
+
             <p className="text-center text-gray-600 mb-10 text-sm leading-relaxed">
               Sign in to your account to access your medical documents and health history.
             </p>
@@ -84,47 +86,40 @@ export default function Login() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email Input */}
-              <div>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Your email address"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition text-gray-900 placeholder-gray-500"
-                  required
-                />
-              </div>
+              <input
+                type="email"
+                name="email"
+                placeholder="Your email address"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition text-gray-900 placeholder-gray-500"
+                required
+              />
 
-              {/* Password Input */}
-              <div>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition text-gray-900 placeholder-gray-500"
-                  required
-                />
-              </div>
+              <input
+                type="password"
+                name="password"
+                placeholder="Your password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition text-gray-900 placeholder-gray-500"
+                required
+              />
 
-              {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
+                <label className="flex items-center">
                   <input
                     type="checkbox"
                     name="rememberMe"
                     checked={formData.rememberMe}
                     onChange={handleChange}
-                    id="rememberMe"
                     className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
                   />
-                  <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                  <span className="ml-2 text-sm text-gray-700 cursor-pointer">
                     Remember me
-                  </label>
-                </div>
+                  </span>
+                </label>
+
                 <Link
                   href="/forgot-password"
                   className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
@@ -133,7 +128,6 @@ export default function Login() {
                 </Link>
               </div>
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
@@ -143,7 +137,6 @@ export default function Login() {
               </button>
             </form>
 
-            {/* Sign Up Link */}
             <p className="text-center text-gray-600 text-sm mt-8">
               Don't have an account?{' '}
               <Link href="/signup" className="text-emerald-600 hover:text-emerald-700 font-semibold">
@@ -151,28 +144,31 @@ export default function Login() {
               </Link>
             </p>
 
-            {/* Footer */}
             <div className="text-center text-gray-500 text-xs mt-12">
-              <p>Need help? <a href="mailto:support@lifedoc.com" className="text-emerald-600 hover:text-emerald-700">support@lifedoc.com</a></p>
+              Need help?{' '}
+              <a
+                href="mailto:support@lifedoc.com"
+                className="text-emerald-600 hover:text-emerald-700"
+              >
+                support@lifedoc.com
+              </a>
             </div>
           </div>
         </div>
 
-        {/* Right Side - Content (Hidden on mobile) */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-400 to-emerald-600 flex-col items-center justify-center p-8 relative overflow-hidden">
-          {/* Decorative background */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 right-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
-            <div className="absolute bottom-10 left-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
-          </div>
+        {/* Right */}
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gray-100">
+          <img
+            src="https://res.cloudinary.com/dzsvjyg2c/image/upload/v1766864239/Gemini_Generated_Image_7tp4m87tp4m87tp4_o2zzbs.png"
+            alt="LifeDoc Medical Professionals"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
 
-          {/* Content */}
-          <div className="relative z-10 text-center text-white max-w-md">
-            <h2 className="text-4xl font-bold mb-4">
-              Your Health Matters
-            </h2>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-12">
+            <h2 className="text-4xl font-bold text-white mb-2">Your Health Matters</h2>
             <p className="text-emerald-50 text-lg leading-relaxed">
-              Access your medical records, track your health history, and stay connected with your healthcare providers.
+              Access your medical records, track your health history, and stay connected
+              with your healthcare providers.
             </p>
           </div>
         </div>
