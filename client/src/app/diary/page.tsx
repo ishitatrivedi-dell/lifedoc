@@ -61,7 +61,7 @@ export default function DiaryPage() {
         <ProtectedRoute>
             <div className="flex min-h-screen bg-gray-50">
                 <Sidebar />
-                <main className="flex-1 ml-64 p-8">
+                <main className="flex-1 ml-72 p-8">
                     <header className="flex justify-between items-center mb-8">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-800">Health Diary</h1>
@@ -108,9 +108,9 @@ export default function DiaryPage() {
                                         <div className="h-16 w-2 bg-gray-100 rounded-full relative overflow-hidden">
                                             <div
                                                 className={`absolute bottom-0 w-full rounded-full ${stat._id === 'happy' ? 'bg-yellow-400' :
-                                                        stat._id === 'energetic' ? 'bg-orange-400' :
-                                                            stat._id === 'sad' ? 'bg-blue-400' :
-                                                                stat._id === 'stressed' ? 'bg-red-400' : 'bg-gray-400'
+                                                    stat._id === 'energetic' ? 'bg-orange-400' :
+                                                        stat._id === 'sad' ? 'bg-blue-400' :
+                                                            stat._id === 'stressed' ? 'bg-red-400' : 'bg-gray-400'
                                                     }`}
                                                 style={{ height: `${(stat.count / entries.length) * 100}%` }}
                                             ></div>
@@ -127,8 +127,8 @@ export default function DiaryPage() {
                         <button
                             onClick={() => handleFilterMood(null)}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition ${selectedMood === null
-                                    ? 'bg-gray-800 text-white'
-                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                                ? 'bg-gray-800 text-white'
+                                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                                 }`}
                         >
                             All
@@ -138,8 +138,8 @@ export default function DiaryPage() {
                                 key={m.id}
                                 onClick={() => handleFilterMood(m.id)}
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition flex items-center space-x-2 ${selectedMood === m.id
-                                        ? `${m.bg} ${m.color.replace('text-', 'text-')} ring-1 ring-inset ring-current`
-                                        : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                                    ? `${m.bg} ${m.color.replace('text-', 'text-')} ring-1 ring-inset ring-current`
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
                                     }`}
                             >
                                 <m.icon className={selectedMood === m.id ? m.color : 'text-gray-400'} />

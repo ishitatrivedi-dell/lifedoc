@@ -85,7 +85,7 @@ export default function EditDiaryEntryPage() {
             <ProtectedRoute>
                 <div className="flex min-h-screen bg-gray-50">
                     <Sidebar />
-                    <main className="flex-1 ml-64 p-8 flex items-center justify-center">
+                    <main className="flex-1 ml-72 p-8 flex items-center justify-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                     </main>
                 </div>
@@ -97,7 +97,7 @@ export default function EditDiaryEntryPage() {
         <ProtectedRoute>
             <div className="flex min-h-screen bg-gray-50">
                 <Sidebar />
-                <main className="flex-1 ml-64 p-8">
+                <main className="flex-1 ml-72 p-8">
                     <header className="flex items-center mb-8">
                         <button
                             onClick={() => router.back()}
