@@ -36,7 +36,8 @@ const userSchema = new mongoose.Schema({
     height: { type: Number }, // in cm
     weight: { type: Number }, // in kg
     bloodGroup: { type: String },
-    chronicConditions: [{ type: String }] // e.g., ["diabetes", "hypertension"]
+    chronicConditions: [{ type: String }], // e.g., ["diabetes", "hypertension"]
+    storyDesc: { type: String } // AI generated summary of user's lifestyle
   },
 
   sosContacts: [sosContactSchema],

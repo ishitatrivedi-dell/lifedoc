@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,6 +19,15 @@ export default function NewLabReportPage() {
     const [notes, setNotes] = useState('');
     const [fileUrl, setFileUrl] = useState(''); // Base64 string
     const [analyzing, setAnalyzing] = useState(false);
+    const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+    const loadingMessages = [
+        "Analyzing lab report...",
+        "Extracting test results...",
+        "Summarizing clinical findings...",
+        "Uploading to secure storage...",
+        "Finalizing report..."
+    ];
+
     const [aiResponse, setAiResponse] = useState<any>(null);
 
     // Dynamic results builder
@@ -45,12 +54,24 @@ export default function NewLabReportPage() {
         }
     };
 
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (loading || analyzing) {
+            interval = setInterval(() => {
+                setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+            }, 2000);
+        } else {
+            setLoadingMessageIndex(0);
+        }
+        return () => clearInterval(interval);
+    }, [loading, analyzing]);
+
     const handleAnalyze = async () => {
         if (!fileUrl) return;
         setAnalyzing(true);
         setAiResponse(null);
         try {
-            const resultAction = await dispatch(analyzeLabReport(fileUrl));
+            const resultAction = await dispatch(analyzeLabReport({ image: fileUrl }));
             if (analyzeLabReport.fulfilled.match(resultAction)) {
                 const data = resultAction.payload;
                 setAiResponse(data);
@@ -92,26 +113,27 @@ export default function NewLabReportPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user?.id) return;
+        if (!user?.id || !fileUrl) {
+            if (!fileUrl) alert("Please upload a lab report image.");
+            return;
+        }
 
-        // Convert results array to object
-        const parsedResults = results.reduce((acc, curr) => {
-            if (curr.key && curr.value) {
-                acc[curr.key] = curr.value;
+        try {
+            const resultAction = await dispatch(analyzeLabReport({
+                image: fileUrl,
+                notes: notes,
+                reportDate: date,
+                testType: testType
+            }));
+
+            if (analyzeLabReport.fulfilled.match(resultAction)) {
+                router.push('/lab-reports');
+            } else {
+                alert("Failed to save report. Please try again.");
             }
-            return acc;
-        }, {} as any);
-
-        const result = await dispatch(createLabReport({
-            reportDate: date,
-            testType,
-            parsedResults,
-            notes,
-            fileUrl: fileUrl || undefined
-        }));
-
-        if (createLabReport.fulfilled.match(result)) {
-            router.push('/lab-reports');
+        } catch (error) {
+            console.error("Save failed", error);
+            alert("An error occurred while saving.");
         }
     };
 
@@ -128,8 +150,26 @@ export default function NewLabReportPage() {
                     <h1 className="text-2xl font-bold text-gray-800">Add Lab Report</h1>
                 </header>
 
-                <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg border border-gray-100 relative overflow-hidden">
+
+                    {/* Loading Overlay */}
+                    {(loading || analyzing) && (
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+                            <div className="bg-white p-8 rounded-2xl shadow-2xl border border-gray-100 flex flex-col items-center max-w-sm w-full mx-4">
+                                <div className="relative w-16 h-16 mb-6">
+                                    <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
+                                    <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                                    <FaMagic className="absolute inset-0 m-auto text-blue-600 text-xl animate-pulse" />
+                                </div>
+                                <h3 className="text-xl font-bold text-gray-800 mb-2">Processing Report</h3>
+                                <p className="text-gray-500 text-center animate-pulse transition-all duration-500">
+                                    {loadingMessages[loadingMessageIndex]}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className={`space-y-6 transition-all duration-300 ${(loading || analyzing) ? 'opacity-50 blur-sm pointer-events-none' : ''}`}>
 
                         {/* File Upload & Analysis */}
                         <div className="bg-blue-50 p-6 rounded-xl border border-blue-100">
@@ -148,21 +188,12 @@ export default function NewLabReportPage() {
                                     onClick={handleAnalyze}
                                     disabled={!fileUrl || analyzing}
                                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${!fileUrl || analyzing
-                                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:shadow-md'
+                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:shadow-md'
                                         }`}
                                 >
-                                    {analyzing ? (
-                                        <>
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                            <span>Analyzing...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <FaMagic />
-                                            <span>Analyze with AI</span>
-                                        </>
-                                    )}
+                                    <FaMagic />
+                                    <span>Analyze with AI</span>
                                 </button>
                             </div>
                             {fileUrl && (
@@ -195,9 +226,8 @@ export default function NewLabReportPage() {
                                     type="text"
                                     value={testType}
                                     onChange={(e) => setTestType(e.target.value)}
-                                    placeholder="e.g. Lipid Profile, CBC"
+                                    placeholder={fileUrl ? "Auto-assigned by AI" : "e.g. Lipid Profile, CBC"}
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    required
                                 />
                             </div>
                         </div>
@@ -251,7 +281,7 @@ export default function NewLabReportPage() {
 
                     {/* AI Analysis Response Section */}
                     {aiResponse && (
-                        <div className="mt-8 pt-8 border-t border-gray-100">
+                        <div className={`mt-8 pt-8 border-t border-gray-100 transition-all duration-300 ${(loading || analyzing) ? 'opacity-50 blur-sm pointer-events-none' : ''}`}>
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
                                 <FaMagic className="text-purple-500 mr-2" />
                                 AI Analysis Result

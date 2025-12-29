@@ -5,12 +5,12 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
-import { updateUserProfile, uploadProfilePhoto } from '@/store/slices/authSlice';
-import { FaUser, FaEnvelope, FaBirthdayCake, FaIdCard, FaEdit, FaTimes, FaSave, FaCamera } from 'react-icons/fa';
+import { updateUserProfile, uploadProfilePhoto, fetchUserProfile } from '@/store/slices/authSlice';
+import { FaUser, FaEnvelope, FaBirthdayCake, FaIdCard, FaEdit, FaTimes, FaSave, FaCamera, FaStethoscope, FaCheck, FaChevronRight } from 'react-icons/fa';
 
 export default function Profile() {
     const dispatch = useDispatch<AppDispatch>();
-    const { user } = useSelector((state: RootState) => state.auth);
+    const { user, token } = useSelector((state: RootState) => state.auth);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Editing State (Modal)
@@ -26,6 +26,17 @@ export default function Profile() {
         bloodGroup: '',
         chronicConditions: ''
     });
+
+    // Explain Yourself State
+    const [showExplainModal, setShowExplainModal] = useState(false);
+    const [explainStep, setExplainStep] = useState(1); // 1: Disease, 2: Questions, 3: Analysis
+    const [selectedDiseases, setSelectedDiseases] = useState<string[]>([]);
+    const [questions, setQuestions] = useState<any[]>([]);
+    const [additionalDetails, setAdditionalDetails] = useState('');
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+
+    const commonDiseases = ["Diabetes", "Hypertension", "Asthma", "Arthritis", "Heart Disease", "Thyroid", "None of these"];
 
     useEffect(() => {
         if (user) {
@@ -91,6 +102,106 @@ export default function Profile() {
                 chronicConditions: user.profile?.chronicConditions?.join(', ') || ''
             });
         }
+    };
+
+    const handleDiseaseToggle = (disease: string) => {
+        if (disease === "None of these") {
+            setSelectedDiseases(["None of these"]);
+            return;
+        }
+
+        let newSelection = [...selectedDiseases];
+        if (newSelection.includes("None of these")) {
+            newSelection = [];
+        }
+
+        if (newSelection.includes(disease)) {
+            newSelection = newSelection.filter(d => d !== disease);
+        } else {
+            newSelection.push(disease);
+        }
+        setSelectedDiseases(newSelection);
+    };
+
+    const startQuestionnaire = async () => {
+        if (selectedDiseases.length === 0) return;
+
+        setIsAnalyzing(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/generate-questions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ diseases: selectedDiseases })
+            });
+            const data = await response.json();
+            setQuestions(data);
+            setExplainStep(2);
+        } catch (error) {
+            console.error("Error generating questions", error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const handleAnswerChange = (index: number, answer: string) => {
+        const updatedQuestions = [...questions];
+        updatedQuestions[index].ans = answer;
+        setQuestions(updatedQuestions);
+    };
+
+    const handleSubmitAll = () => {
+        // Transform questions to the format expected by the API
+        const formattedAnswers = questions.map(q => ({
+            question: q.question,
+            answer: q.ans
+        }));
+        submitAnswers(formattedAnswers);
+    };
+
+    const submitAnswers = async (finalAnswers: any[]) => {
+        setIsAnalyzing(true);
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/analyze-lifestyle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    answers: finalAnswers,
+                    diseases: selectedDiseases,
+                    additionalDetails: additionalDetails,
+                    userProfile: {
+                        age: user?.age,
+                        gender: user?.profile?.gender,
+                        height: user?.profile?.height,
+                        weight: user?.profile?.weight,
+                        bloodGroup: user?.profile?.bloodGroup
+                    }
+                })
+            });
+            const data = await response.json();
+            setAnalysisResult(data.summary);
+            setExplainStep(3);
+            // Refresh user profile to show new storyDesc
+            dispatch(fetchUserProfile());
+        } catch (error) {
+            console.error("Error analyzing answers", error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
+
+    const closeExplainModal = () => {
+        setShowExplainModal(false);
+        setExplainStep(1);
+        setSelectedDiseases([]);
+        setQuestions([]);
+        setAdditionalDetails('');
+        setAnalysisResult(null);
     };
 
     return (
@@ -204,12 +315,21 @@ export default function Profile() {
                                         <FaUser className="text-[#7A8E6B]" />
                                         Health Profile
                                     </h3>
-                                    <button
-                                        onClick={() => setEditSection('health')}
-                                        className="text-gray-400 hover:text-[#7A8E6B] transition-colors"
-                                    >
-                                        <FaEdit />
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setShowExplainModal(true)}
+                                            className="text-[#7A8E6B] hover:text-[#6a7d5d] transition-colors flex items-center gap-1 text-sm font-semibold bg-[#7A8E6B]/10 px-3 py-1.5 rounded-lg"
+                                        >
+                                            <FaStethoscope />
+                                            Explain Yourself
+                                        </button>
+                                        <button
+                                            onClick={() => setEditSection('health')}
+                                            className="text-gray-400 hover:text-[#7A8E6B] transition-colors"
+                                        >
+                                            <FaEdit />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4">
@@ -250,8 +370,26 @@ export default function Profile() {
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
+
+                        {/* My Health Story Section */}
+                        {user?.profile?.storyDesc && (
+                            <div className="mt-6 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-10 h-10 bg-[#7A8E6B]/10 rounded-full flex items-center justify-center text-[#7A8E6B]">
+                                        <FaStethoscope />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-800">My Health Story</h3>
+                                </div>
+                                <div className="p-6 bg-[#7A8E6B]/5 rounded-xl border border-[#7A8E6B]/20">
+                                    <p className="text-gray-800 text-base leading-relaxed italic">
+                                        "{user.profile.storyDesc}"
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Edit Modal */}
@@ -374,6 +512,161 @@ export default function Profile() {
                                     >
                                         Save Changes
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Explain Yourself Modal */}
+                    {showExplainModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+                                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#7A8E6B] text-white">
+                                    <h3 className="text-xl font-bold flex items-center gap-2">
+                                        <FaStethoscope />
+                                        Explain Yourself
+                                    </h3>
+                                    <button onClick={closeExplainModal} className="text-white/80 hover:text-white">
+                                        <FaTimes className="text-xl" />
+                                    </button>
+                                </div>
+
+                                <div className="p-8 overflow-y-auto flex-1">
+                                    {explainStep === 1 && (
+                                        <div className="space-y-6">
+                                            <div className="text-center">
+                                                <h4 className="text-2xl font-bold text-gray-800 mb-2">Do you have any chronic conditions?</h4>
+                                                <p className="text-gray-500">Select all that apply to you. This helps us personalize your health profile.</p>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                                {commonDiseases.map(disease => (
+                                                    <button
+                                                        key={disease}
+                                                        onClick={() => handleDiseaseToggle(disease)}
+                                                        className={`p-4 rounded-xl border-2 transition-all flex items-center justify-center text-center font-medium ${selectedDiseases.includes(disease)
+                                                            ? 'border-[#7A8E6B] bg-[#7A8E6B]/10 text-[#7A8E6B]'
+                                                            : 'border-gray-100 hover:border-[#7A8E6B]/50 text-gray-600'
+                                                            }`}
+                                                    >
+                                                        {disease}
+                                                        {selectedDiseases.includes(disease) && <FaCheck className="ml-2 text-xs" />}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <div className="flex justify-end pt-4">
+                                                <button
+                                                    onClick={startQuestionnaire}
+                                                    disabled={selectedDiseases.length === 0 || isAnalyzing}
+                                                    className="bg-[#7A8E6B] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#6a7d5d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
+                                                >
+                                                    {isAnalyzing ? 'Generating...' : 'Next Step'}
+                                                    {!isAnalyzing && <FaChevronRight />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {explainStep === 2 && questions.length > 0 && (
+                                        <div className="space-y-8">
+                                            <div className="text-center mb-6">
+                                                <h4 className="text-2xl font-bold text-gray-800">Tell us more about yourself</h4>
+                                                <p className="text-gray-500">Please answer the following questions to help us understand your lifestyle.</p>
+                                            </div>
+
+                                            <div className="space-y-6">
+                                                {questions.map((q, index) => (
+                                                    <div key={index} className="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                                                        <h5 className="text-lg font-bold text-gray-800 mb-4">
+                                                            {index + 1}. {q.question}
+                                                        </h5>
+
+                                                        {q.type === 'mcq' && q.options ? (
+                                                            <div className="space-y-3">
+                                                                {q.options.map((option: string, optIdx: number) => (
+                                                                    <button
+                                                                        key={optIdx}
+                                                                        onClick={() => handleAnswerChange(index, option)}
+                                                                        className={`w-full p-4 text-left rounded-xl border-2 transition-all ${q.ans === option
+                                                                            ? 'border-[#7A8E6B] bg-[#7A8E6B]/10 text-[#7A8E6B] font-semibold'
+                                                                            : 'border-gray-100 hover:border-[#7A8E6B]/50 text-gray-600'
+                                                                            }`}
+                                                                    >
+                                                                        {option}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <textarea
+                                                                value={q.ans || ''}
+                                                                onChange={(e) => handleAnswerChange(index, e.target.value)}
+                                                                placeholder="Type your answer here..."
+                                                                className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7A8E6B]/50 resize-none"
+                                                            ></textarea>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100">
+                                                <h5 className="text-lg font-bold text-gray-800 mb-4">
+                                                    Anything else you'd like to share? (Optional)
+                                                </h5>
+                                                <textarea
+                                                    value={additionalDetails}
+                                                    onChange={(e) => setAdditionalDetails(e.target.value)}
+                                                    placeholder="Feel free to add any other details about your health, habits, or concerns..."
+                                                    className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7A8E6B]/50 resize-none"
+                                                ></textarea>
+                                            </div>
+
+                                            <div className="flex justify-end pt-4">
+                                                <button
+                                                    onClick={handleSubmitAll}
+                                                    disabled={questions.some(q => !q.ans)}
+                                                    className="bg-[#7A8E6B] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#6a7d5d] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all shadow-lg shadow-[#7A8E6B]/20"
+                                                >
+                                                    Submit Analysis
+                                                    <FaChevronRight />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {explainStep === 3 && (
+                                        <div className="text-center space-y-6 py-8">
+                                            <div className="w-20 h-20 bg-[#7A8E6B]/10 rounded-full flex items-center justify-center mx-auto text-[#7A8E6B] text-4xl mb-4">
+                                                <FaCheck />
+                                            </div>
+                                            <h4 className="text-3xl font-bold text-gray-800">Analysis Complete!</h4>
+                                            <p className="text-gray-600 max-w-md mx-auto">
+                                                We've analyzed your lifestyle and health profile. Here is your personalized health story:
+                                            </p>
+
+                                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left shadow-inner">
+                                                <p className="text-gray-800 leading-relaxed italic">
+                                                    "{analysisResult}"
+                                                </p>
+                                            </div>
+
+                                            <button
+                                                onClick={closeExplainModal}
+                                                className="bg-[#7A8E6B] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#6a7d5d] shadow-lg shadow-[#7A8E6B]/20 transition-all"
+                                            >
+                                                Go to Profile
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {isAnalyzing && (
+                                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+                                            <div className="w-16 h-16 border-4 border-[#7A8E6B]/30 border-t-[#7A8E6B] rounded-full animate-spin mb-4"></div>
+                                            <p className="text-[#7A8E6B] font-bold animate-pulse">
+                                                {explainStep === 1 ? 'Generating personalized questions...' : 'Analyzing your health profile...'}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

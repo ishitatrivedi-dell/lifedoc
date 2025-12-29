@@ -6,7 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
 import { fetchLabReportById } from '@/store/slices/labReportsSlice';
 import { useRouter, useParams } from 'next/navigation';
-import { FaArrowLeft, FaFlask, FaDownload, FaMagic, FaCalendarAlt, FaNotesMedical } from 'react-icons/fa';
+import { deleteLabReport } from '@/store/slices/labReportsSlice';
+import { FaArrowLeft, FaFlask, FaDownload, FaMagic, FaCalendarAlt, FaNotesMedical, FaTrash } from 'react-icons/fa';
 
 export default function LabReportDetailsPage() {
     const dispatch = useDispatch<AppDispatch>();
@@ -21,6 +22,19 @@ export default function LabReportDetailsPage() {
             dispatch(fetchLabReportById(id as string));
         }
     }, [dispatch, id]);
+
+    const handleDelete = async () => {
+        if (confirm("Are you sure you want to delete this lab report? This action cannot be undone.")) {
+            if (id) {
+                const result = await dispatch(deleteLabReport(id as string));
+                if (deleteLabReport.fulfilled.match(result)) {
+                    router.push('/lab-reports');
+                } else {
+                    alert("Failed to delete report.");
+                }
+            }
+        }
+    };
 
     if (loading) {
         return (
@@ -70,17 +84,26 @@ export default function LabReportDetailsPage() {
                             {new Date(currentReport.reportDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </div>
                     </div>
-                    {currentReport.fileUrl && (
-                        <a
-                            href={currentReport.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="ml-auto btn-secondary flex items-center space-x-2"
+                    <div className="ml-auto flex items-center space-x-3">
+                        {currentReport.fileUrl && (
+                            <a
+                                href={currentReport.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-secondary flex items-center space-x-2"
+                            >
+                                <FaDownload />
+                                <span>View Original</span>
+                            </a>
+                        )}
+                        <button
+                            onClick={handleDelete}
+                            className="flex items-center space-x-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium"
                         >
-                            <FaDownload />
-                            <span>View Original</span>
-                        </a>
-                    )}
+                            <FaTrash />
+                            <span>Delete</span>
+                        </button>
+                    </div>
                 </header>
 
                 <div className="max-w-5xl mx-auto space-y-8">
@@ -204,6 +227,23 @@ export default function LabReportDetailsPage() {
                                 <p className="text-gray-600 whitespace-pre-wrap leading-relaxed bg-green-50 p-4 rounded-xl border border-green-100">
                                     {currentReport.notes}
                                 </p>
+                            </div>
+                        )}
+
+                        {/* Original Report Image */}
+                        {currentReport.originalReport && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                <h3 className="font-bold text-gray-800 mb-4 flex items-center">
+                                    <FaFlask className="mr-2 text-indigo-500" />
+                                    Original Report
+                                </h3>
+                                <div className="rounded-xl overflow-hidden border border-gray-200">
+                                    <img
+                                        src={currentReport.originalReport}
+                                        alt="Original Lab Report"
+                                        className="w-full h-auto object-contain max-h-[600px] bg-gray-50"
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

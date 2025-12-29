@@ -15,6 +15,7 @@ interface User {
     bloodGroup?: string;
     chronicConditions?: string[];
     photoUrl?: string;
+    storyDesc?: string;
   };
   profileImage?: string;
 }

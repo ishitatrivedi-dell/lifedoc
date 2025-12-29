@@ -16,6 +16,7 @@ const auth = require('../middleware/authMiddleware');
 const Consultation = require('../models/Consultation');
 const Prescription = require('../models/Prescription');
 const LabReport = require('../models/LabReport');
+const User = require('../models/User');
 
 // Middleware to check auth would go here
 // const auth = require('../middleware/auth'); 
@@ -206,7 +207,7 @@ router.post('/summerizer', auth, async (req, res) => {
 // Desc: Analyze lab report image/PDF using Gemini
 router.post('/analyze-lab-report', auth, async (req, res) => {
     try {
-        const { image } = req.body; // Base64 string
+        const { image, notes, reportDate: userDate, testType: userTestType } = req.body; // Base64 string and optional overrides
 
         if (!image) {
             return res.status(400).json({ msg: 'Please upload a lab report image' });
@@ -260,20 +261,35 @@ router.post('/analyze-lab-report', auth, async (req, res) => {
         const textResponse = response.text();
         const aiResult = JSON.parse(textResponse);
 
-        // Determine test type and date
-        const reportDate = aiResult.labReport?.reportDate ? new Date(aiResult.labReport.reportDate) : new Date();
-        let testType = "General Lab Report";
-        if (aiResult.tests && aiResult.tests.length > 0) {
-            testType = aiResult.tests[0].testCategory || aiResult.tests[0].testName || "General Lab Report";
+        // Determine test type and date (User overrides take precedence if provided, otherwise AI)
+        const finalReportDate = userDate ? new Date(userDate) : (aiResult.labReport?.reportDate ? new Date(aiResult.labReport.reportDate) : new Date());
+
+        let finalTestType = userTestType || "General Lab Report";
+        if (!userTestType && aiResult.tests && aiResult.tests.length > 0) {
+            finalTestType = aiResult.tests[0].testCategory || aiResult.tests[0].testName || "General Lab Report";
+        }
+
+        // Upload to Cloudinary
+        const cloudinary = require('../utils/cloudinary');
+        let cloudinaryUrl = null;
+        try {
+            const uploadResponse = await cloudinary.uploader.upload(image, {
+                folder: 'lab_reports',
+                resource_type: 'auto'
+            });
+            cloudinaryUrl = uploadResponse.secure_url;
+        } catch (uploadError) {
+            console.error("Cloudinary Upload Error:", uploadError.message);
         }
 
         const newLabReport = new LabReport({
             userId: req.user.id,
-            reportDate: reportDate,
-            testType: testType,
+            reportDate: finalReportDate,
+            testType: finalTestType,
             parsedResults: aiResult,
-            fileUrl: image, // Storing base64 for now
-            notes: "Analyzed by AI"
+            fileUrl: cloudinaryUrl || image, // Use Cloudinary URL if available, else fallback to base64
+            originalReport: cloudinaryUrl, // Keep this for now as per previous request
+            notes: notes || "Analyzed by AI"
         });
 
         await newLabReport.save();
@@ -287,6 +303,133 @@ router.post('/analyze-lab-report', auth, async (req, res) => {
     } catch (err) {
         console.error("Lab Report Analysis Error:", err.message);
         res.status(500).json({ msg: 'Error analyzing lab report', error: err.message });
+    }
+});
+
+// POST /api/ai/generate-questions
+// Desc: Generate lifestyle questions based on chronic conditions
+router.post('/generate-questions', auth, async (req, res) => {
+    try {
+        const { diseases } = req.body; // Array of strings e.g. ["Diabetes", "None"]
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ msg: 'Server Configuration Error: API Key missing.' });
+        }
+
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+        const prompt = `
+        You are a medical expert. The user has the following conditions: ${diseases && diseases.length > 0 ? diseases.join(", ") : "None"}.
+        Generate 3 to 5 specific, relevant questions to ask this user to understand their lifestyle, diet, and daily habits better, which will help in creating a personalized health summary.
+        
+        Requirements:
+        1. Generate a mix of Multiple Choice Questions (MCQ) and Text Input questions.
+        2. If the user has specific diseases, ask about medication adherence, specific diet restrictions, etc.
+        3. If "None" or empty, ask about general fitness, diet, and stress.
+        
+        Output strictly a JSON array of objects with this structure:
+        [
+            {
+                "id": 1,
+                "question": "Question text here",
+                "type": "mcq", 
+                "options": ["Option 1", "Option 2", "Option 3"],
+                "ans": ""
+            },
+            {
+                "id": 2,
+                "question": "Question text here",
+                "type": "text",
+                "options": [],
+                "ans": ""
+            }
+        ]
+        Ensure you include at least one "mcq" and one "text" type question.
+        Do not include markdown formatting.
+        `;
+
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        });
+
+        const response = await result.response;
+        const textResponse = response.text();
+        const questions = JSON.parse(textResponse);
+
+        res.json(questions);
+
+    } catch (err) {
+        console.error("Generate Questions Error:", err.message);
+        const fs = require('fs');
+        const path = require('path');
+        fs.writeFileSync(path.join(__dirname, '../error_log.txt'), `Error: ${err.message}\nStack: ${err.stack}\n`);
+        res.status(500).json({ msg: 'Error generating questions', error: err.message });
+    }
+});
+
+// POST /api/ai/analyze-lifestyle
+// Desc: Analyze answers and update user storyDesc
+router.post('/analyze-lifestyle', auth, async (req, res) => {
+    try {
+        const { answers, diseases, additionalDetails, userProfile } = req.body; // answers: [{question, answer}], diseases: [], additionalDetails: string, userProfile: {}
+
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ msg: 'Server Configuration Error: API Key missing.' });
+        }
+
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+
+        const prompt = `
+        You are a medical expert. Analyze the following user profile and questionnaire answers.
+        
+        Conditions: ${diseases ? diseases.join(", ") : "None"}
+        
+        User Profile:
+        Age: ${userProfile?.age || "Not specified"}
+        Gender: ${userProfile?.gender || "Not specified"}
+        Height: ${userProfile?.height ? userProfile.height + " cm" : "Not specified"}
+        Weight: ${userProfile?.weight ? userProfile.weight + " kg" : "Not specified"}
+        Blood Group: ${userProfile?.bloodGroup || "Not specified"}
+
+        Q&A:
+        ${answers.map(a => `Q: ${a.question}\nA: ${a.answer}`).join("\n\n")}
+        
+        Additional Details from User:
+        ${additionalDetails || "None provided"}
+        
+        Create a comprehensive, empathetic, and professional summary of the user's health lifestyle, habits, and potential areas for improvement. 
+        This summary will be displayed on their profile as "My Health Story".
+        Keep it under 150 words. Use "You" to address the user.
+        
+        Output strictly JSON:
+        {
+            "summary": "Your summary text here..."
+        }
+        `;
+
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        });
+
+        const response = await result.response;
+        const textResponse = response.text();
+        const aiResult = JSON.parse(textResponse);
+
+        // Update User Profile
+        // Note: storyDesc is inside the profile object in User model
+        await User.findByIdAndUpdate(req.user.id, {
+            $set: { "profile.storyDesc": aiResult.summary }
+        });
+
+        res.json(aiResult);
+
+    } catch (err) {
+        console.error("Analyze Lifestyle Error:", err.message);
+        res.status(500).json({ msg: 'Error analyzing lifestyle', error: err.message });
     }
 });
 
