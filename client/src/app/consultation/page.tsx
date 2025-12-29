@@ -2,7 +2,7 @@
 import 'regenerator-runtime/runtime';
 import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import Sidebar from '@/components/Sidebar';
+import DashboardLayout from '@/components/DashboardLayout';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { FaMicrophone, FaStop, FaRobot, FaVolumeUp, FaLanguage } from 'react-icons/fa';
 
@@ -85,9 +85,8 @@ export default function ConsultationPage() {
 
     return (
         <ProtectedRoute>
-            <div className="flex min-h-screen">
-                <Sidebar />
-                <main className="flex-1 ml-72 p-8 flex flex-col items-center justify-center min-h-screen relative overflow-hidden">
+            <DashboardLayout>
+                <div className="flex flex-col items-center justify-center min-h-[85vh] relative overflow-hidden w-full">
                     {/* Background Blobs for specific immersive feel */}
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#7A8E6B]/5 rounded-full blur-3xl pointer-events-none -mr-32 -mt-32"></div>
                     <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#A9C29B]/5 rounded-full blur-3xl pointer-events-none -ml-32 -mb-32"></div>
@@ -199,8 +198,8 @@ export default function ConsultationPage() {
                             </div>
                         )}
                     </div>
-                </main>
-            </div>
+                </div>
+            </DashboardLayout>
         </ProtectedRoute>
     );
 }

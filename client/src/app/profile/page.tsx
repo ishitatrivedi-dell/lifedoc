@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import Sidebar from '@/components/Sidebar';
+import DashboardLayout from '@/components/DashboardLayout';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
 import { updateUserProfile, uploadProfilePhoto } from '@/store/slices/authSlice';
@@ -95,9 +95,8 @@ export default function Profile() {
 
     return (
         <ProtectedRoute>
-            <div className="flex min-h-screen bg-white">
-                <Sidebar />
-                <main className="flex-1 ml-72 p-8 bg-white min-h-screen">
+            <DashboardLayout>
+                <div className="flex flex-col min-h-screen bg-white">
                     <header className="mb-8 flex justify-between items-end">
                         <div>
                             <p className="text-gray-400 text-sm font-semibold uppercase tracking-wider mb-1">My Account</p>
@@ -379,8 +378,8 @@ export default function Profile() {
                             </div>
                         </div>
                     )}
-                </main>
-            </div>
+                </div>
+            </DashboardLayout>
         </ProtectedRoute>
     );
 }
