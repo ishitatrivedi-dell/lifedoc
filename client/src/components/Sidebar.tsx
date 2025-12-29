@@ -82,20 +82,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
                         <FaUser className="text-xl" />
                         <span className="font-medium">Profile</span>
                     </Link>
-                    <button
-                        onClick={() => document.body.classList.toggle('large-text')}
-                        className="flex items-center space-x-3 px-4 py-2 w-full rounded-xl text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                    >
-                        <span className="text-xl">Aa</span>
-                        <span className="font-medium">Big Text</span>
-                    </button>
-                    <button
-                        onClick={() => document.body.classList.toggle('high-contrast')}
-                        className="flex items-center space-x-3 px-4 py-2 w-full rounded-xl text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                    >
-                        <span className="text-xl">👁️</span>
-                        <span className="font-medium">Contrast</span>
-                    </button>
+
 
                     <div className="h-px bg-gray-200 my-2"></div>
 
