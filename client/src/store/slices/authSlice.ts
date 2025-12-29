@@ -14,7 +14,9 @@ interface User {
     weight?: number;
     bloodGroup?: string;
     chronicConditions?: string[];
+    photoUrl?: string;
   };
+  profileImage?: string;
 }
 
 interface AuthState {
@@ -172,6 +174,31 @@ export const updateUserProfile = createAsyncThunk(
   }
 );
 
+export const uploadProfilePhoto = createAsyncThunk(
+  'auth/uploadProfilePhoto',
+  async (file: File, { rejectWithValue }) => {
+    try {
+      if (typeof window === 'undefined') throw new Error('Not in browser environment');
+
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) throw new Error('No token found');
+
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile/photo`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      return { user: response.data.user };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to upload photo');
+    }
+  }
+);
+
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
   // Clear tokens (only in browser)
   if (typeof window !== 'undefined') {
@@ -282,6 +309,22 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(updateUserProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Upload Profile Photo
+    builder
+      .addCase(uploadProfilePhoto.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(uploadProfilePhoto.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.error = null;
+      })
+      .addCase(uploadProfilePhoto.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

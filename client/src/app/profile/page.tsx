@@ -1,16 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Sidebar from '@/components/Sidebar';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
-import { updateUserProfile } from '@/store/slices/authSlice';
-import { FaUser, FaEnvelope, FaBirthdayCake, FaIdCard, FaEdit, FaTimes, FaSave } from 'react-icons/fa';
+import { updateUserProfile, uploadProfilePhoto } from '@/store/slices/authSlice';
+import { FaUser, FaEnvelope, FaBirthdayCake, FaIdCard, FaEdit, FaTimes, FaSave, FaCamera } from 'react-icons/fa';
 
 export default function Profile() {
     const dispatch = useDispatch<AppDispatch>();
     const { user } = useSelector((state: RootState) => state.auth);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Editing State (Modal)
     const [editSection, setEditSection] = useState<'personal' | 'health' | null>(null);
@@ -46,6 +47,12 @@ export default function Profile() {
             ...prev,
             [name]: value
         }));
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            await dispatch(uploadProfilePhoto(e.target.files[0]));
+        }
     };
 
     const handleSave = async () => {
@@ -104,8 +111,29 @@ export default function Profile() {
                         {/* Profile Header Card */}
                         <div className="bg-gradient-primary rounded-2xl p-8 mb-8 shadow-lg relative overflow-hidden">
                             <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6">
-                                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-4xl font-bold text-[#7A8E6B] shadow-md border-4 border-white/20">
-                                    {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                <div className="relative group">
+                                    <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-4xl font-bold text-[#7A8E6B] shadow-md border-4 border-white/20 overflow-hidden">
+                                        {user?.profileImage ? (
+                                            <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : user?.profile?.photoUrl ? (
+                                            <img src={user.profile.photoUrl} alt="Profile" className="w-full h-full object-cover" />
+                                        ) : (
+                                            user?.name?.charAt(0).toUpperCase() || 'U'
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="absolute bottom-0 right-0 bg-white p-2 rounded-full shadow-md text-gray-600 hover:text-[#7A8E6B] transition-colors"
+                                    >
+                                        <FaCamera className="text-sm" />
+                                    </button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                    />
                                 </div>
                                 <div className="text-center md:text-left text-white">
                                     <h2 className="text-3xl font-bold mb-2">{user?.name || 'User Name'}</h2>

@@ -1,4 +1,5 @@
 const express = require("express");
+// Trigger restart for env vars
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { sendOTP } = require("../utils/mailer");
@@ -60,7 +61,8 @@ router.post("/verify-otp", async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      age: user.age
+      age: user.age,
+      profileImage: user.profileImage
     };
 
     res.status(200).json({ message: "Verification successful", token, user: userData });
@@ -88,7 +90,8 @@ router.post("/login", async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      age: user.age
+      age: user.age,
+      profileImage: user.profileImage
     };
 
     res.status(200).json({ message: "Login successful", token, user: userData });
@@ -150,6 +153,7 @@ router.get("/profile", authMiddleware, async (req, res) => {
       name: user.name,
       email: user.email,
       age: user.age,
+      profileImage: user.profileImage,
       profile: user.profile || {}
     };
 
@@ -193,11 +197,60 @@ router.put("/profile", authMiddleware, async (req, res) => {
       name: user.name,
       email: user.email,
       age: user.age,
+      profileImage: user.profileImage,
       profile: user.profile
     };
 
     res.status(200).json({ message: "Profile updated successfully", user: userData });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Upload profile photo
+const upload = require('../middleware/uploadMiddleware');
+const cloudinary = require('../utils/cloudinaryConfig');
+
+router.post("/profile/photo", authMiddleware, upload.single('photo'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No image file provided" });
+    }
+
+    // Convert buffer to base64 string for Cloudinary
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+
+    // Upload to Cloudinary
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: "user_profiles",
+      // Optional: Add transformation if needed (e.g., face detection, cropping)
+      resource_type: "auto"
+    });
+
+    // Update user with new photo URL
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Optional: Delete old image from Cloudinary if it exists (and is a Cloudinary URL)
+    // For simplicity as requested, we just replace the URL.
+
+    user.profileImage = result.secure_url;
+
+    await user.save();
+
+    const userData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      age: user.age,
+      profileImage: user.profileImage,
+      profile: user.profile
+    };
+
+    res.status(200).json({ message: "Photo uploaded successfully", user: userData });
+  } catch (error) {
+    console.error("Upload Error:", error);
     res.status(500).json({ message: error.message });
   }
 });
