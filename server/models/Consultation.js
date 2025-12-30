@@ -22,6 +22,12 @@ const consultationSchema = new mongoose.Schema({
     actions: [{
         type: String
     }],
+    lifestyleAdvice: [{
+        type: String
+    }],
+    suggestedMedicines: [{
+        type: String
+    }],
     language: {
         type: String,
         default: 'en'

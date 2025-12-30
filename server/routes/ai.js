@@ -8,32 +8,23 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 dotenv.config();
 
-/* const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-}); */
-
 const auth = require('../middleware/authMiddleware');
 const Consultation = require('../models/Consultation');
 const Prescription = require('../models/Prescription');
 const LabReport = require('../models/LabReport');
 const User = require('../models/User');
 
-// Middleware to check auth would go here
-// const auth = require('../middleware/auth'); 
-
-// POST /api/ai/analyze
-// Desc: Analyze symptom text and return medical summary
 router.post('/analyze', auth, async (req, res) => {
     const { text, language } = req.body;
 
-    if (!process.env.OPENAI_API_KEY) {
-        console.error("Server Error: OPENAI_API_KEY is missing from environment variables.");
+    if (!process.env.GEMINI_API_KEY) {
+        console.error("Server Error: GEMINI_API_KEY is missing from environment variables.");
         return res.status(500).json({ msg: 'Server Configuration Error: API Key missing.' });
     }
 
-    const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
+    // Initialize Gemini
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
     if (!text) {
         return res.status(400).json({ msg: 'Please provide symptom text' });
@@ -41,28 +32,39 @@ router.post('/analyze', auth, async (req, res) => {
 
     try {
         const prompt = `
-    You are Docmetry, an AI medical assistant for elderly patients. 
-    Analyze the following patient statement: "${text}"
-    
-    Provide the response in JSON format with these fields:
-    - summary: A conversational, empathetic summary of what the patient said, addressed TO the patient (e.g., "I understand you are feeling...").
-    - urgency: "Low", "Medium", or "High".
-    - actions: A list of 2-3 simple, actionable steps they can take at home or should do next.
-    - language: Detect the language or use the provided preference (${language || 'English'}). Ensure the summary and actions are in this language.
-    
-    IMPORTANT: Provide strictly valid JSON. Do not include markdown formatting.
-    `;
+        You are Docmetry, an AI medical assistant. 
+        Analyze the following symptom description from a patient: "${text}"
+        
+        Provide the response in strict JSON format with these fields:
+        - summary: A conversational, empathetic summary addressed TO the patient (e.g., "I understand you are feeling...").
+        - urgency: "Low", "Medium", or "High".
+        - actions: A list of 2-3 simple, immediate actionable steps.
+        - lifestyleAdvice: A list of 2-3 lifestyle changes or habits to improve their condition (e.g., diet, sleep, exercise).
+        - suggestedMedicines: A list of common over-the-counter medications that MIGHT help (must include a disclaimer like "Consult a doctor first").
+        - language: The response MUST be in ${language === 'hi' ? 'Hindi' : language === 'gu' ? 'Gujarati' : 'English'}.
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-                { role: "system", content: "You are a helpful and empathetic medical AI assistant." },
-                { role: "user", content: prompt }
-            ],
-            response_format: { type: "json_object" },
+        IMPORTANT requirements:
+        1. Output ONLY valid JSON. No markdown backticks.
+        2. Be empathetic and professional.
+        3. If the input is nonsense, politely ask for clarification in the summary.
+        `;
+
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
         });
 
-        const aiResult = JSON.parse(response.choices[0].message.content);
+        const response = await result.response;
+        const textResponse = response.text();
+
+        let aiResult;
+        try {
+            aiResult = JSON.parse(textResponse);
+        } catch (e) {
+            // Fallback cleaning
+            const cleanText = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+            aiResult = JSON.parse(cleanText);
+        }
 
         // Save to Database
         const newConsultation = new Consultation({
@@ -70,7 +72,9 @@ router.post('/analyze', auth, async (req, res) => {
             symptoms: text,
             aiSummary: aiResult.summary,
             urgency: aiResult.urgency,
-            actions: aiResult.actions,
+            actions: aiResult.actions || [],
+            lifestyleAdvice: aiResult.lifestyleAdvice || [],
+            suggestedMedicines: aiResult.suggestedMedicines || [],
             language: language || 'en'
         });
 
@@ -78,7 +82,7 @@ router.post('/analyze', auth, async (req, res) => {
 
         res.json(aiResult);
     } catch (err) {
-        console.error("AI Error:", err.message);
+        console.error("Gemini AI Error:", err.message);
         res.status(500).json({ msg: 'Error processing AI request', error: err.message });
     }
 });

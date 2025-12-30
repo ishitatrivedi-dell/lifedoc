@@ -2,12 +2,15 @@
 import { useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
 import { FaCamera, FaUpload, FaSpinner, FaPrescriptionBottleAlt, FaVolumeUp } from 'react-icons/fa';
 
 export default function PrescriptionScannerPage() {
     const [image, setImage] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
     const [result, setResult] = useState<any>(null);
+    const { token } = useSelector((state: RootState) => state.auth);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -26,9 +29,12 @@ export default function PrescriptionScannerPage() {
         setAnalyzing(true);
 
         try {
-            const response = await fetch('http://localhost:3001/api/ai/analyze-prescription', {
+            const response = await fetch('http://localhost:5000/api/ai/analyze-prescription', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ image })
             });
             const data = await response.json();
