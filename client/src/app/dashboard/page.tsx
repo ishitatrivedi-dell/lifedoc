@@ -12,6 +12,7 @@ import { FaHeartbeat, FaTint, FaWeight, FaCalendarCheck, FaMicrophone, FaFileMed
 import VitalsCard from '@/components/dashboard/VitalsCard';
 import HealthTrendChart from '@/components/dashboard/HealthTrendChart';
 import HealthNewsWidget from '@/components/dashboard/HealthNewsWidget';
+import UpcomingAppointments from '@/components/dashboard/UpcomingAppointments';
 import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
 
 export default function Dashboard() {
@@ -181,6 +182,8 @@ export default function Dashboard() {
                             color="#38B2AC" // Teal 400
                         />
 
+                        <UpcomingAppointments />
+
                         {/* Recent Activity List */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
                             <div className="flex justify-between items-center mb-6">
@@ -217,14 +220,6 @@ export default function Dashboard() {
                     {/* Right Column: News & Status */}
                     <div className="space-y-8">
                         <HealthNewsWidget />
-
-                        {/* Gamification / Status Card */}
-                        <div className="bg-[#17252A] rounded-2xl p-6 text-white text-center relative overflow-hidden">
-                            <div className="absolute top-0 transform -translate-x-1/2 left-1/2 w-full h-1 bg-gradient-to-r from-transparent via-[#3AAFA9] to-transparent"></div>
-                            <h3 className="text-lg font-bold mb-2">Health Streak 🔥</h3>
-                            <div className="text-4xl font-extrabold text-[#3AAFA9] mb-1">12 Days</div>
-                            <p className="text-gray-400 text-xs">Keep logging to reach your monthly goal!</p>
-                        </div>
                     </div>
                 </div>
             </DashboardLayout>

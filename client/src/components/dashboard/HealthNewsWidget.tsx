@@ -1,15 +1,16 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { FaLightbulb, FaNewspaper, FaChevronRight, FaExclamationCircle } from 'react-icons/fa';
+import { FaLightbulb, FaNewspaper, FaChevronRight, FaExclamationCircle, FaArrowRight } from 'react-icons/fa';
 import axios from 'axios';
+import Link from 'next/link';
 
 interface NewsItem {
-    id: string;
+    _id: string;
     title: string;
-    snippet: string;
+    description: string;
     source: string;
-    date: string;
-    link: string;
+    publishedAt: string;
+    url: string;
 }
 
 const TIPS_MOCK = [
@@ -39,15 +40,13 @@ const HealthNewsWidget = () => {
         const fetchNews = async () => {
             try {
                 setLoading(true);
-                // Use relative URL or env var. For client side, usually /api proxied or full URL.
-                // Since this is Next.js client component calling independent Express server (likely different port in Dev),
-                // we should use the Full URL from env or assume proxy.
-                // Based on authSlice, we use process.env.NEXT_PUBLIC_API_URL
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+                // Use port 5000 as per previous fix
+                const apiUrl = 'http://localhost:5000/api';
                 const response = await axios.get(`${apiUrl}/news`);
 
                 if (response.data.success) {
-                    setNews(response.data.data);
+                    // Take only first 4 items
+                    setNews(response.data.data.slice(0, 4));
                 }
             } catch (err) {
                 console.error("News Fetch Error", err);
@@ -82,7 +81,7 @@ const HealthNewsWidget = () => {
             </div>
 
             {/* News Feed */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 min-h-[300px]">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 min-h-[300px] flex flex-col">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                         <FaNewspaper className="text-blue-500" /> Health News
@@ -94,7 +93,7 @@ const HealthNewsWidget = () => {
                 </div>
 
                 {loading ? (
-                    <div className="space-y-4">
+                    <div className="space-y-4 flex-1">
                         {[1, 2, 3].map(i => (
                             <div key={i} className="animate-pulse">
                                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -104,46 +103,45 @@ const HealthNewsWidget = () => {
                         ))}
                     </div>
                 ) : error ? (
-                    <div className="text-center py-8 text-gray-400">
+                    <div className="text-center py-8 text-gray-400 flex-1">
                         <FaExclamationCircle className="mx-auto text-2xl mb-2 text-gray-300" />
                         <p className="text-sm">{error}</p>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-6 flex-1">
                         {news.map((newsItem) => (
                             <div
-                                key={newsItem.id}
-                                onClick={() => handleNewsClick(newsItem.link)}
+                                key={newsItem._id}
+                                onClick={() => handleNewsClick(newsItem.url)}
                                 className="group cursor-pointer"
                             >
                                 <h4 className="font-bold text-gray-800 group-hover:text-blue-600 transition-colors mb-1 line-clamp-2">
                                     {newsItem.title}
                                 </h4>
                                 <p className="text-sm text-gray-500 line-clamp-2 mb-2 leading-relaxed">
-                                    {newsItem.snippet}
+                                    {newsItem.description || newsItem.title}
                                 </p>
                                 <div className="flex items-center justify-between text-xs text-gray-400">
                                     <span className="font-medium bg-gray-50 px-2 py-1 rounded">{newsItem.source}</span>
                                     <span className="flex items-center gap-1">
-                                        {newsItem.date}
+                                        {new Date(newsItem.publishedAt).toLocaleDateString()}
                                         <FaChevronRight className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500 -ml-2 group-hover:ml-0 duration-300" />
                                     </span>
                                 </div>
                             </div>
                         ))}
-
-                        <div className="pt-2 text-center">
-                            <a
-                                href="https://www.medicalnewstoday.com/"
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-xs text-gray-400 hover:text-blue-500 transition-colors"
-                            >
-                                Powered by MedicalNewsToday
-                            </a>
-                        </div>
                     </div>
                 )}
+
+                <div className="pt-6 mt-auto border-t border-gray-50">
+                    <Link
+                        href="/insights"
+                        className="w-full flex items-center justify-center space-x-2 bg-blue-50 text-blue-600 py-2 rounded-xl font-bold text-sm hover:bg-blue-100 transition-colors"
+                    >
+                        <span>View All Insights</span>
+                        <FaArrowRight />
+                    </Link>
+                </div>
             </div>
         </div>
     );
