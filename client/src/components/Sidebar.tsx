@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FaHome, FaHeartbeat, FaBookMedical, FaFileMedical, FaUserMd, FaSignOutAlt, FaMicrophone, FaCamera, FaUser, FaLightbulb, FaCalendarAlt } from 'react-icons/fa';
+import { FaHome, FaHeartbeat, FaBookMedical, FaFileMedical, FaUserMd, FaSignOutAlt, FaMicrophone, FaCamera, FaUser, FaLightbulb, FaCalendarAlt, FaUsers, FaBell } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { logoutUser } from '@/store/slices/authSlice';
@@ -32,8 +32,10 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
         { name: 'Lab Reports', path: '/lab-reports', icon: FaFileMedical },
         { name: 'Doctor Reports', path: '/doctor-reports', icon: FaUserMd },
         { name: 'Appointments', path: '/appointments', icon: FaCalendarAlt },
+        { name: 'Family Health', path: '/family', icon: FaUsers },
         { name: 'Insights', path: '/insights', icon: FaLightbulb },
     ];
+
 
     return (
         <>
