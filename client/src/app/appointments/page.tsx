@@ -132,7 +132,9 @@ const AppointmentsPage = () => {
                                     </div>
                                     <div>
                                         <div className="flex items-center space-x-2 mb-1">
-                                            <h3 className="text-lg font-bold text-gray-900">{app.providerName}</h3>
+                                            <Link href={`/appointments/${app._id}`} className="hover:underline">
+                                                <h3 className="text-lg font-bold text-gray-900">{app.providerName}</h3>
+                                            </Link>
                                             <span className={`text-xs font-bold px-2 py-1 rounded-full ${app.status === 'Scheduled' ? 'bg-green-100 text-green-700' :
                                                 app.status === 'Completed' ? 'bg-gray-100 text-gray-600' :
                                                     'bg-red-100 text-red-700'
@@ -270,7 +272,7 @@ const AppointmentsPage = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

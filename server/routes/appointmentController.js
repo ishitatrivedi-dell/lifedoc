@@ -27,10 +27,30 @@ exports.getAppointments = async (req, res) => {
         const userId = req.user.id;
         // Get upcoming appointments first, then past ones? Or just all sorted by date.
         // Let's sort by date descending (newest first)
-        const appointments = await Appointment.find({ userId }).sort({ date: 1, time: 1 });
+        const appointments = await Appointment.find({ userId }).sort({ date: -1, time: -1 });
         res.status(200).json({ success: true, data: appointments });
     } catch (error) {
         console.error('Error fetching appointments:', error);
+        res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+exports.getAppointmentById = async (req, res) => {
+    try {
+        const appointment = await Appointment.findById(req.params.id);
+
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' });
+        }
+
+        // Ensure user owns appointment
+        if (appointment.userId.toString() !== req.user.id) {
+            return res.status(401).json({ success: false, message: 'Not authorized' });
+        }
+
+        res.status(200).json({ success: true, data: appointment });
+    } catch (error) {
+        console.error('Error fetching appointment:', error);
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 };

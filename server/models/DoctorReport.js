@@ -13,6 +13,10 @@ const doctorReportSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  appointmentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Appointment'
+  },
   visitDate: { type: Date, required: true },
   doctorName: { type: String },
   diagnosis: [{ type: String }],
