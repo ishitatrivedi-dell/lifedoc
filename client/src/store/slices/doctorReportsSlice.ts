@@ -58,7 +58,7 @@ export const fetchDoctorReports = createAsyncThunk(
 
 export const createDoctorReport = createAsyncThunk(
     'doctorReports/create',
-    async (data: { visitDate: string; doctorName?: string; diagnosis?: string[]; prescriptions?: Prescription[]; summary?: string; fileUrl?: string; followUpDate?: string }, { rejectWithValue }) => {
+    async (data: { userId: string; visitDate: string; doctorName?: string; diagnosis?: string[]; prescriptions?: Prescription[]; summary?: string; fileUrl?: string; followUpDate?: string }, { rejectWithValue }) => {
         try {
             const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/doctor-reports`, data, {
                 headers: getAuthHeader(),

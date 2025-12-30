@@ -5,17 +5,18 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
 import { createDoctorReport } from '@/store/slices/doctorReportsSlice';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FaArrowLeft, FaUserMd, FaPrescriptionBottleAlt, FaPlus, FaTrash } from 'react-icons/fa';
 
 export default function NewDoctorReportPage() {
     const dispatch = useDispatch<AppDispatch>();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user } = useSelector((state: RootState) => state.auth);
     const { loading } = useSelector((state: RootState) => state.doctorReports);
 
-    const [visitDate, setVisitDate] = useState(new Date().toISOString().split('T')[0]);
-    const [doctorName, setDoctorName] = useState('');
+    const [visitDate, setVisitDate] = useState(searchParams.get('date')?.split('T')[0] || new Date().toISOString().split('T')[0]);
+    const [doctorName, setDoctorName] = useState(searchParams.get('doctor') || '');
     const [summary, setSummary] = useState('');
     const [followUpDate, setFollowUpDate] = useState('');
     const [diagnoses, setDiagnoses] = useState<string[]>(['']);
@@ -24,6 +25,11 @@ export default function NewDoctorReportPage() {
     const [prescriptions, setPrescriptions] = useState<{ medicine: string, dosage: string, frequency: string }[]>([
         { medicine: '', dosage: '', frequency: '' }
     ]);
+
+    // File Upload
+    const [fileUrl, setFileUrl] = useState('');
+    const [uploading, setUploading] = useState(false);
+
 
     const handleAddDiagnosis = () => setDiagnoses([...diagnoses, '']);
     const handleDiagnosisChange = (index: number, value: string) => {
@@ -42,6 +48,35 @@ export default function NewDoctorReportPage() {
         setPrescriptions(prescriptions.filter((_, i) => i !== index));
     };
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        setUploading(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setFileUrl(data.url);
+            } else {
+                console.error('Upload failed:', data);
+                alert(`Upload failed: ${data.message}\nDetails: ${data.error || 'Check console for logs'}`);
+            }
+        } catch (err: any) {
+            console.error(err);
+            alert(`Error uploading image: ${err.message}`);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user?.id) return;
@@ -51,12 +86,16 @@ export default function NewDoctorReportPage() {
         const cleanPrescriptions = prescriptions.filter(p => p.medicine.trim() !== '');
 
         const result = await dispatch(createDoctorReport({
+            userId: user.id,
             visitDate,
             doctorName,
             summary,
             diagnosis: cleanDiagnoses,
             prescriptions: cleanPrescriptions,
-            followUpDate: followUpDate || undefined
+            diagnosis: cleanDiagnoses,
+            prescriptions: cleanPrescriptions,
+            followUpDate: followUpDate || undefined,
+            fileUrl
         }));
 
         if (createDoctorReport.fulfilled.match(result)) {
@@ -106,7 +145,7 @@ export default function NewDoctorReportPage() {
 
                         {/* Diagnosis */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Diagnoses</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Diagnoses (Optional)</label>
                             <div className="space-y-3">
                                 {diagnoses.map((diagnosis, index) => (
                                     <input
@@ -122,55 +161,46 @@ export default function NewDoctorReportPage() {
                             </div>
                         </div>
 
-                        {/* Prescriptions */}
-                        <div className="bg-green-50 p-6 rounded-xl">
-                            <div className="flex justify-between items-center mb-4">
-                                <label className="block text-md font-bold text-green-800 flex items-center">
-                                    <FaPrescriptionBottleAlt className="mr-2" /> Prescriptions
-                                </label>
-                            </div>
-                            <div className="space-y-4">
-                                {prescriptions.map((prescription, index) => (
-                                    <div key={index} className="flex flex-col md:flex-row gap-3 items-start bg-white p-4 rounded-lg shadow-sm">
-                                        <input
-                                            type="text"
-                                            placeholder="Medicine Name"
-                                            value={prescription.medicine}
-                                            onChange={(e) => handlePrescriptionChange(index, 'medicine', e.target.value)}
-                                            className="flex-grow px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Dosage (500mg)"
-                                            value={prescription.dosage}
-                                            onChange={(e) => handlePrescriptionChange(index, 'dosage', e.target.value)}
-                                            className="w-full md:w-32 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Frequency (2x daily)"
-                                            value={prescription.frequency}
-                                            onChange={(e) => handlePrescriptionChange(index, 'frequency', e.target.value)}
-                                            className="w-full md:w-40 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemovePrescription(index)}
-                                            className="p-2 text-red-400 hover:text-red-600"
-                                        >
-                                            <FaTrash />
-                                        </button>
-                                    </div>
-                                ))}
-                                <button type="button" onClick={handleAddPrescription} className="w-full py-2 border-2 border-dashed border-green-200 rounded-lg text-green-600 font-medium hover:bg-green-100 transition">
-                                    + Add Prescription
-                                </button>
-                            </div>
+
+                        {/* Prescription Upload */}
+                        <div className="bg-blue-50 p-6 rounded-xl">
+                            <label className="block text-md font-bold text-blue-800 mb-4 flex items-center">
+                                <FaPrescriptionBottleAlt className="mr-2" /> Upload Prescription / Report
+                            </label>
+
+                            {fileUrl ? (
+                                <div className="relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden border border-gray-300">
+                                    <img src={fileUrl} alt="Prescription" className="w-full h-full object-contain" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setFileUrl('')}
+                                        className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full shadow hover:bg-red-700"
+                                    >
+                                        <FaTrash size={12} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center w-full">
+                                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100">
+                                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                            {uploading ? (
+                                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                            ) : (
+                                                <>
+                                                    <FaPlus className="w-8 h-8 mb-3 text-blue-500" />
+                                                    <p className="mb-2 text-sm text-blue-500"><span className="font-semibold">Click to upload</span> prescription image</p>
+                                                </>
+                                            )}
+                                        </div>
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={uploading} />
+                                    </label>
+                                </div>
+                            )}
                         </div>
 
                         {/* Summary */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Clinical Summary</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Clinical Summary (Optional)</label>
                             <textarea
                                 value={summary}
                                 onChange={(e) => setSummary(e.target.value)}

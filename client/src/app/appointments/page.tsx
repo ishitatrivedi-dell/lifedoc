@@ -4,7 +4,8 @@ import Sidebar from '@/components/Sidebar';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { FaCalendarAlt, FaUserMd, FaFlask, FaPlus, FaTimes, FaTrash, FaCheckCircle } from 'react-icons/fa';
+import { FaCalendarAlt, FaUserMd, FaFlask, FaPlus, FaTimes, FaTrash, FaCheckCircle, FaFileUpload } from 'react-icons/fa';
+import Link from 'next/link';
 
 interface Appointment {
     _id: string;
@@ -133,8 +134,8 @@ const AppointmentsPage = () => {
                                         <div className="flex items-center space-x-2 mb-1">
                                             <h3 className="text-lg font-bold text-gray-900">{app.providerName}</h3>
                                             <span className={`text-xs font-bold px-2 py-1 rounded-full ${app.status === 'Scheduled' ? 'bg-green-100 text-green-700' :
-                                                    app.status === 'Completed' ? 'bg-gray-100 text-gray-600' :
-                                                        'bg-red-100 text-red-700'
+                                                app.status === 'Completed' ? 'bg-gray-100 text-gray-600' :
+                                                    'bg-red-100 text-red-700'
                                                 }`}>
                                                 {app.status}
                                             </span>
@@ -166,6 +167,15 @@ const AppointmentsPage = () => {
                                                 <FaTimes className="text-xl" />
                                             </button>
                                         </>
+                                    )}
+                                    {app.status === 'Completed' && (
+                                        <Link
+                                            href={`/doctor-reports/new?date=${app.date}&doctor=${encodeURIComponent(app.providerName)}`}
+                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg tooltip"
+                                            title="Create Report"
+                                        >
+                                            <FaFileUpload className="text-xl" />
+                                        </Link>
                                     )}
                                     <button
                                         onClick={() => handleDelete(app._id)}

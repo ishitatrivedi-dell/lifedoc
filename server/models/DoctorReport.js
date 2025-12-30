@@ -8,10 +8,10 @@ const prescriptionSchema = new mongoose.Schema({
 });
 
 const doctorReportSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   visitDate: { type: Date, required: true },
   doctorName: { type: String },

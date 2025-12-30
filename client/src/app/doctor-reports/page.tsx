@@ -65,7 +65,9 @@ export default function DoctorReportsPage() {
                                             <FaUserMd className="text-xl" />
                                         </div>
                                         <div>
-                                            <h3 className="text-lg font-bold text-gray-800">{report.doctorName || 'Doctor Visit'}</h3>
+                                            <Link href={`/doctor-reports/${report._id}`} className="hover:underline">
+                                                <h3 className="text-lg font-bold text-gray-800">{report.doctorName || 'Doctor Visit'}</h3>
+                                            </Link>
                                             <p className="text-sm text-gray-500">
                                                 {new Date(report.visitDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                             </p>
