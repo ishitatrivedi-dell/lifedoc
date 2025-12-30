@@ -92,8 +92,6 @@ export default function NewDoctorReportPage() {
             summary,
             diagnosis: cleanDiagnoses,
             prescriptions: cleanPrescriptions,
-            diagnosis: cleanDiagnoses,
-            prescriptions: cleanPrescriptions,
             followUpDate: followUpDate || undefined,
             fileUrl
         }));
@@ -229,7 +227,7 @@ export default function NewDoctorReportPage() {
                         </button>
                     </form>
                 </div>
-            </DashboardLayout>
-        </ProtectedRoute>
+            </DashboardLayout >
+        </ProtectedRoute >
     );
 }

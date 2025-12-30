@@ -28,6 +28,7 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
         // { name: 'Rx Scanner', path: '/scan', icon: FaCamera },
         { name: 'Measurements', path: '/measurements', icon: FaHeartbeat },
         { name: 'Diary', path: '/diary', icon: FaBookMedical },
+        { name: 'Medical Info', path: '/medical-info', icon: FaBookMedical },
         { name: 'Lab Reports', path: '/lab-reports', icon: FaFileMedical },
         { name: 'Doctor Reports', path: '/doctor-reports', icon: FaUserMd },
         { name: 'Appointments', path: '/appointments', icon: FaCalendarAlt },
