@@ -29,6 +29,8 @@ const userSchema = new mongoose.Schema({
   otp: { type: String },
   otpExpires: { type: Date },
   profileImage: { type: String },
+  isManaged: { type: Boolean, default: false }, // For dependent accounts (e.g., elderly parents, children)
+
 
   // New health profile fields
   profile: {

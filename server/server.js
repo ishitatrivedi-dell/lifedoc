@@ -11,7 +11,9 @@ const aiRoutes = require("./routes/ai");
 const newsRoutes = require("./routes/news");
 const appointmentRoutes = require("./routes/appointments");
 const referenceRoutes = require("./routes/reference");
+const familyRoutes = require("./routes/family");
 const { startCronJob } = require("./jobs/newsFetcher");
+
 
 const app = express();
 dotenv.config();
@@ -51,6 +53,8 @@ app.use("/api/upload", require("./routes/upload"));
 
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/reference", referenceRoutes);
+app.use("/api/family", familyRoutes);
+
 
 // 404 Handler - If no route matched
 app.use((req, res, next) => {
